@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0b0a0d">
+    <title>Vota l'Improvvisazione - Arsenale delle Apparizioni</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Anton&family=Special+Elite&family=Roboto:wght@400;700&display=swap');
+
+        :root{
+            --bg: #0b0a0d;
+            --bg-soft: #16131a;
+            --curtain: #2a0e14;
+            --paper: #f1e6c8;
+            --paper-edge: #d8c79e;
+            --ink: #1b1812;
+            --gold: #c89b3c;
+            --gold-soft: rgba(200,155,60,0.35);
+            --blue: #2f6fed;
+            --blue-deep: #1c4fc2;
+            --red: #e2384a;
+            --red-deep: #b41f30;
+            --cream: #f3ece0;
+            --muted: #9b9384;
+        }
+
+        *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html, body{
+            margin:0;
+            padding:0;
+            background: var(--bg);
+            color: var(--cream);
+        }
+
+        body{
+            font-family: 'Roboto', sans-serif;
+            min-height: 100dvh;
+            min-height: 100vh;
+            display:flex;
+            justify-content:center;
+            align-items: flex-start;
+            overflow-x: hidden;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            background:
+                radial-gradient(ellipse 70% 40% at 50% 0%, rgba(200,155,60,0.10), transparent 60%),
+                var(--bg);
+        }
+
+        /* Stage curtain fringe along the very top */
+        #curtain-top{
+            position: fixed;
+            top:0; left:0; right:0;
+            height: 16px;
+            background: linear-gradient(180deg, var(--curtain), #1a0810);
+            z-index: 5;
+        }
+        #curtain-top::after{
+            content:"";
+            position:absolute;
+            top: 16px; left:0; right:0; height:10px;
+            background-image: repeating-linear-gradient(
+                -55deg,
+                var(--curtain) 0 8px,
+                transparent 8px 16px
+            );
+            opacity:0.9;
+        }
+
+        #container{
+            width: 100%;
+            max-width: 480px;
+            display:flex;
+            flex-direction: column;
+            align-items:center;
+            padding: 36px 20px 48px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* STAMP FRAME FOR LOGO */
+        .stamp-frame{
+            width: 92px;
+            height: 92px;
+            border-radius: 50%;
+            background: var(--paper);
+            border: 3px solid var(--gold);
+            box-shadow:
+                0 0 0 5px var(--bg),
+                0 0 0 7px var(--gold-soft),
+                0 8px 20px rgba(0,0,0,0.55);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding: 6px;
+            margin-bottom: 18px;
+        }
+        .stamp-frame img{
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display:block;
+        }
+
+        .eyebrow{
+            font-family: 'Special Elite', monospace;
+            font-size: 12px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin: 0 0 6px;
+        }
+
+        #title{
+            font-family: 'Anton', sans-serif;
+            font-size: 30px;
+            line-height: 1.1;
+            color: var(--cream);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align:center;
+            text-shadow: 0 0 18px rgba(255,255,255,0.18);
+            margin: 0 0 22px;
+        }
+
+        /* MASCOT IN A SPOTLIGHT */
+        .spotlight{
+            position: relative;
+            width: 168px;
+            margin: 0 0 22px;
+            display:flex;
+            justify-content:center;
+        }
+        .spotlight::before{
+            content:"";
+            position:absolute;
+            top:50%; left:50%;
+            width: 230px; height: 230px;
+            transform: translate(-50%,-50%);
+            background: radial-gradient(circle, rgba(255,247,220,0.20), transparent 70%);
+            z-index: 0;
+            border-radius: 50%;
+        }
+        .spotlight img{
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            display:block;
+            background: var(--paper);
+            border-radius: 50%;
+            padding: 10px 10px 0;
+            border: 3px solid var(--paper-edge);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+        }
+
+        .question{
+            font-family: 'Special Elite', monospace;
+            font-size: 17px;
+            color: var(--muted);
+            text-align:center;
+            margin: 0 0 26px;
+            max-width: 320px;
+        }
+        .question strong{
+            color: var(--cream);
+        }
+
+        /* TICKET BUTTONS */
+        .btn-container{
+            display:flex;
+            flex-direction: column;
+            gap: 22px;
+            width: 100%;
+        }
+
+        @media (min-width: 560px){
+            .btn-container{ flex-direction: row; }
+        }
+
+        .ticket-btn{
+            position: relative;
+            flex: 1;
+            display:flex;
+            flex-direction: column;
+            align-items:center;
+            justify-content:center;
+            gap: 4px;
+            min-height: 96px;
+            padding: 18px 16px;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            color: var(--cream);
+            touch-action: manipulation;
+            transition: transform 0.12s ease, box-shadow 0.2s ease;
+        }
+        .ticket-btn::before,
+        .ticket-btn::after{
+            content:"";
+            position:absolute;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--bg);
+            top:50%;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+        .ticket-btn::before{ left: -11px; }
+        .ticket-btn::after{ right: -11px; }
+
+        .ticket-btn .squadra-label{
+            font-family: 'Anton', sans-serif;
+            font-size: 22px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .ticket-btn .squadra-sub{
+            font-family: 'Special Elite', monospace;
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0.85;
+        }
+
+        .btn-a{
+            background: linear-gradient(160deg, var(--blue), var(--blue-deep));
+            box-shadow: 0 10px 22px rgba(47,111,237,0.35);
+        }
+        .btn-b{
+            background: linear-gradient(160deg, var(--red), var(--red-deep));
+            box-shadow: 0 10px 22px rgba(226,56,74,0.35);
+        }
+
+        .ticket-btn:active{
+            transform: translateY(2px) scale(0.98);
+        }
+        .btn-a:active{ box-shadow: 0 4px 12px rgba(47,111,237,0.45); }
+        .btn-b:active{ box-shadow: 0 4px 12px rgba(226,56,74,0.45); }
+
+        @media (hover:hover){
+            .ticket-btn:hover{ transform: translateY(-3px); }
+        }
+
+        footer{
+            margin-top: 36px;
+            font-family: 'Special Elite', monospace;
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--muted);
+            text-align:center;
+        }
+
+        /* OVERLAY DI BLOCCO - STAMPED TICKET */
+        #overlay{
+            display:none;
+            position: fixed;
+            inset:0;
+            background: rgba(8,7,9,0.92);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            justify-content:center;
+            align-items:center;
+            flex-direction: column;
+            padding: 24px;
+            text-align:center;
+        }
+
+        .ticket-confirm{
+            background: var(--paper);
+            color: var(--ink);
+            border-radius: 18px;
+            padding: 34px 28px 28px;
+            max-width: 320px;
+            width: 100%;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            border: 2px dashed var(--gold);
+        }
+
+        #overlay-logo{
+            width: 110px;
+            display:block;
+            margin: 0 auto 14px;
+        }
+
+        #messaggio{
+            color: #1c7a4f;
+            font-size: 22px;
+            font-weight: 700;
+            font-family: 'Anton', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            line-height: 1.3;
+        }
+
+        #sub-messaggio{
+            color: #5a5648;
+            font-family: 'Special Elite', monospace;
+            font-size: 13px;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 360px){
+            #title{ font-size: 25px; }
+            .spotlight{ width: 140px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="curtain-top"></div>
+
+    <div id="overlay">
+        <div class="ticket-confirm">
+            <img src="logo_arsenale.png" alt="Logo Arsenale delle Apparizioni" id="overlay-logo">
+            <div id="messaggio">Voto registrato! ✅</div>
+            <div id="sub-messaggio">Grazie per aver partecipato.</div>
+        </div>
+    </div>
+
+    <div id="container">
+        <div class="stamp-frame">
+            <img src="logo_arsenale.png" alt="Logo Arsenale delle Apparizioni">
+        </div>
+        <p class="eyebrow">Serata di improvvisazione</p>
+        <h1 id="title">Arsenale delle Apparizioni</h1>
+
+        <div class="spotlight">
+            <img src="nonnaAda.png" alt="Nonna Ada, mascotte dell'Arsenale delle Apparizioni">
+        </div>
+
+        <p class="question">Quale <strong>squadra</strong> ti è piaciuta di più questa sera?</p>
+
+        <div class="btn-container">
+            <button class="ticket-btn btn-a" onclick="vota('opzione_a')">
+                <span class="squadra-label">Squadra Blu</span>
+                <span class="squadra-sub">Tocca per votare</span>
+            </button>
+            <button class="ticket-btn btn-b" onclick="vota('opzione_b')">
+                <span class="squadra-label">Squadra Rossa</span>
+                <span class="squadra-sub">Tocca per votare</span>
+            </button>
+        </div>
+
+        <footer>Un voto per spettatore, per ogni serata</footer>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://orzpwezibuzpchehvdkw.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_uasoAypqJOLzeJAQpfU9qA__5c4SKTK";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const overlay = document.getElementById("overlay");
+
+        function controllaStatoVoto() {
+            if (localStorage.getItem("haVotato") === "true") {
+                overlay.style.display = "flex";
+            } else {
+                overlay.style.display = "none";
+            }
+        }
+
+        controllaStatoVoto();
+        setInterval(controllaStatoVoto, 1000);
+
+        async function vota(opzione) {
+            localStorage.setItem("haVotato", "true");
+            controllaStatoVoto();
+
+            try {
+                let { data, error } = await supabaseClient.from('voti_totali').select('conteggio').eq('id', opzione).single();
+                if (error) throw error;
+
+                let nuovoConteggio = data.conteggio + 1;
+                await supabaseClient.from('voti_totali').update({ conteggio: nuovoConteggio }).eq('id', opzione);
+            } catch (err) {
+                console.error("Errore durante il voto:", err);
+            }
+        }
+    </script>
+</body>
+</html>
